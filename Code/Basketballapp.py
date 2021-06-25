@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns 
 
 import display_modules as dsp
+import sqlalchemy as db
 from sqlalchemy import create_engine
 
 
@@ -29,8 +30,8 @@ def plot_map():
 def read_data():
 
 	# instantiating engine
-	cnx1 = create_engine('sqlite:///NBA.db').connect()
-	cnx2 = create_engine('sqlite:///wnba.db').connect()
+	cnx1 = create_engine('sqlite:///NBASTATS.db').connect()
+	cnx2 = create_engine('sqlite:///WNBASTATS.db').connect()
 
 	
 
@@ -75,13 +76,29 @@ def get_names_WNBA(Stats_DF):
 def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 	pick_league = st.sidebar.selectbox("League",['NBA','WNBA'])
 	if pick_league == 'NBA':
-		drop_down = st.sidebar.selectbox("Explore",['Home Page','Player Plots','Definitions','Player Comparisons'])
+		drop_down = st.sidebar.selectbox("Explore",['Home Page','Player Plots','Definitions','Query'])
 		if drop_down == 'Home Page':
 			st.markdown("# NBA Avanced Player Statistics")
 			st.write("")
 			image = Image.open('WMCJ.jpeg')
 			st.image(image)
 			st.markdown("            *Woody Harrelson and Wesley Snipes in 'White Man Cant Jump'*")
+
+		if drop_down == 'Query':
+			user_query = st.text_area("Write Query", 'SELECT * FROM AdvStats')
+			st.write(user_query)
+			cnxq = create_engine('sqlite:///NBASTATS.db').connect()
+			metadata = db.MetaData()
+			table = db.Table('AdvStats', metadata, autoload=True, autoload_with=cnxq)
+			query = db.select([table])
+			ResultProxy = cnxq.execute(query)
+			ResultSet = ResultProxy.fetchall()
+			df = pd.DataFrame(ResultSet)
+			#st.write(list(user_query))
+			st.write(df)
+
+
+
 
 		if drop_down == 'Definitions':
 			stat_type = st.sidebar.selectbox('Definitions',['Age', 'Team', 'League', 'POS', 'G', 'MP', 'PER', 'TS%', '3PAr', 'FTr',
@@ -194,7 +211,7 @@ def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 			
 
 			if stats_3:
-				cnx3 = create_engine('sqlite:///NBA.db').connect()
+				cnx3 = create_engine('sqlite:///NBASTATS.db').connect()
 				NBAPER = pd.read_sql('MAXPER', cnx3)
 
 				NBAPER.rename(columns={'level_0': 'PlayerName', 'level_1': 'Year'}, inplace=True)
@@ -204,8 +221,8 @@ def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 
 
 			if stats_4:
-				cnx4 = create_engine('sqlite:///NBA.db').connect()
-				NBAWSFE = pd.read_sql('WSPG', cnx4)
+				cnx4 = create_engine('sqlite:///NBASTATS.db').connect()
+				NBAWSFE = pd.read_sql('WSFE', cnx4)
 				NBAWSFE.rename(columns={'level_0': 'PlayerName', 'level_1': 'Year'}, inplace=True)
 				NBAWSFE.set_index(keys=['PlayerName','Year'], drop=True, append=False, inplace=True, verify_integrity=False)
 				st.write(NBAWSFE)
@@ -216,7 +233,7 @@ def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 
 	if pick_league == 'WNBA':
 		
-		drop_down = st.sidebar.selectbox("Explore",['Home Page','Player Plots','Definitions','Player Comparisons'])
+		drop_down = st.sidebar.selectbox("Explore",['Home Page','Player Plots','Definitions'])
 		if drop_down == 'Home Page':
 			st.markdown("# WNBA Advanced Player Statistics")
 			st.write("")
@@ -250,6 +267,7 @@ def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 			st.write("PLAYER STATS ")
 			stats_1 = st.checkbox("Win Share Stats")
 			stats_2 = st.checkbox("Traditional Stats")
+			stats_3 = st.checkbox("All Time Per")
 			
 		
 			if stats_1:
@@ -279,7 +297,7 @@ def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 					if WS:
 						dsp.plot_skeleton(WNBA,player_name,18,19)
 
-
+			
 
 			if stats_2:
 				st.write(" ")
@@ -327,9 +345,10 @@ def streamlit(Stats_DF,WNBA,NAMES,NAMESwnba,plot_map):
 					
 
 			if stats_3:
-				cnx3 = create_engine('sqlite:///NBA.db').connect()
-				NBA = pd.read_sql('MAXPER', cnx1)
-				st.bar_chart(NBA)
+				pass
+				#cnx3 = create_engine('sqlite:///NBA.db').connect()
+				#NBA = pd.read_sql('MAXPER', cnx1)
+				#st.bar_chart(NBA)
 
 
 
